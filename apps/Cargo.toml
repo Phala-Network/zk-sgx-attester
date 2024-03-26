@@ -17,6 +17,7 @@ hex = { workspace = true }
 log = { workspace = true }
 methods = { workspace = true }
 risc0-ethereum-contracts = { workspace = true }
-risc0-zkvm = { workspace = true }
+risc0-zkvm = { workspace = true, features = ["prove"] }
+risc0-groth16 = { workspace = true, features = ["prove"] }
 serde = { workspace = true }
 tokio = { version = "1.35", features = ["full"] }
