@@ -19,9 +19,51 @@
 use alloy_primitives::U256;
 use alloy_sol_types::{sol, SolInterface, SolValue};
 use anyhow::{Context, Result};
-use apps::{BonsaiProver, TxSender};
+use apps::local_prover::LocalProver;
 use clap::Parser;
+use ethers::prelude::*;
 use methods::IS_EVEN_ELF;
+
+/// Wrapper of a `SignerMiddleware` client to send transactions to the given
+/// contract's `Address`.
+pub struct TxSender {
+    chain_id: u64,
+    client: SignerMiddleware<Provider<Http>, Wallet<k256::ecdsa::SigningKey>>,
+    contract: Address,
+}
+
+impl TxSender {
+    /// Creates a new `TxSender`.
+    pub fn new(chain_id: u64, rpc_url: &str, private_key: &str, contract: &str) -> Result<Self> {
+        let provider = Provider::<Http>::try_from(rpc_url)?;
+        let wallet: LocalWallet = private_key.parse::<LocalWallet>()?.with_chain_id(chain_id);
+        let client = SignerMiddleware::new(provider.clone(), wallet.clone());
+        let contract = contract.parse::<Address>()?;
+
+        Ok(TxSender {
+            chain_id,
+            client,
+            contract,
+        })
+    }
+
+    /// Send a transaction with the given calldata.
+    pub async fn send(&self, calldata: Vec<u8>) -> Result<Option<TransactionReceipt>> {
+        let tx = TransactionRequest::new()
+            .chain_id(self.chain_id)
+            .to(self.contract)
+            .from(self.client.address())
+            .data(calldata);
+
+        log::info!("Transaction request: {:?}", &tx);
+
+        let tx = self.client.send_transaction(tx, None).await?.await?;
+
+        log::info!("Transaction receipt: {:?}", &tx);
+
+        Ok(tx)
+    }
+}
 
 // `IEvenNumber` interface automatically generated via the alloy `sol!` macro.
 sol! {
@@ -71,8 +113,10 @@ fn main() -> Result<()> {
     // code expects.
     let input = args.input.abi_encode();
 
+    log::info!("Start to generate proof for intput: {:?}", &input);
+
     // Send an off-chain proof request to the Bonsai proving service.
-    let (journal, post_state_digest, seal) = BonsaiProver::prove(IS_EVEN_ELF, &input)?;
+    let (journal, post_state_digest, seal) = LocalProver::prove(IS_EVEN_ELF, &input)?;
 
     // Decode the journal. Must match what was written in the guest with
     // `env::commit_slice`.
