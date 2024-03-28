@@ -24,13 +24,11 @@ You can deploy your contracts and run an end-to-end test or demo as follows:
     Once anvil is started, keep it running in the terminal, and switch to a new terminal.
 
 2. Set your environment variables:
-    > ***Note:*** *This requires having access to a Bonsai API Key. To request an API key [complete the form here](https://bonsai.xyz/apply).*
+    > ***Note:*** *We don't use Bonsai prover, so no need to config Bonsai API key*
 
     ```bash
     # Anvil sets up a number of default wallets, and this private key is one of them.
     export ETH_WALLET_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
-    export BONSAI_API_KEY="YOUR_API_KEY" # see form linked in the previous section
-    export BONSAI_API_URL="BONSAI_API_URL" # provided with your api key
     ```
 
 3. Build your project:
@@ -51,20 +49,20 @@ You can deploy your contracts and run an end-to-end test or demo as follows:
     ...
     == Logs ==
     Deployed RiscZeroGroth16Verifier to 0x5FbDB2315678afecb367f032d93F642f64180aa3
-    Deployed EvenNumber to 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+    Deployed DcapVerifier to 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
     ...
     ```
 
-    Save the `EvenNumber` contract address to an env variable:
+    Save the `DcapVerifier` contract address to an env variable:
 
     ```bash
-    export EVEN_NUMBER_ADDRESS=#COPY EVEN NUMBER ADDRESS FROM DEPLOY LOGS
+    export DCAP_VERIFIER_ADDRESS=0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512#COPY DCAP VERIFIER ADDRESS FROM DEPLOY LOGS
     ```
 
     > You can also use the following command to set the contract address if you have [`jq`][jq] installed:
     >
     > ```bash
-    > export EVEN_NUMBER_ADDRESS=$(jq -re '.transactions[] | select(.contractName == "EvenNumber") | .contractAddress' ./broadcast/Deploy.s.sol/31337/run-latest.json)
+    > export DCAP_VERIFIER_ADDRESS=$(jq -re '.transactions[] | select(.contractName == "DcapVerifier") | .contractAddress' ./broadcast/Deploy.s.sol/31337/run-latest.json)
     > ```
 
 ### Interact with your local deployment
@@ -72,35 +70,44 @@ You can deploy your contracts and run an end-to-end test or demo as follows:
 1. Query the state:
 
     ```bash
-    cast call --rpc-url http://localhost:8545 ${EVEN_NUMBER_ADDRESS:?} 'get()(uint256)'
+    cast call --rpc-url http://localhost:8545 ${DCAP_VERIFIER_ADDRESS:?} 'get()(bytes memory)'
     ```
 
-2. Publish a new state
+You will see the outputs like below, because no dcap data been submitted:
 
     ```bash
-    cargo run --bin publisher -- \
+    0x0
+    ```
+
+2. Publish a new state (this will verify the hardcoded DCAP input and submit the proof and **serialized** output to DcapVerifier contract)
+
+    ```bash
+    RISC0_DEV_MODE=false cargo run --bin publisher -- \
         --chain-id=31337 \
         --rpc-url=http://localhost:8545 \
-        --contract=${EVEN_NUMBER_ADDRESS:?} \
-        --input=12345678
+        --contract=${DCAP_VERIFIER_ADDRESS:?}
     ```
 
 3. Query the state again to see the change:
 
     ```bash
-    cast call --rpc-url http://localhost:8545 ${EVEN_NUMBER_ADDRESS:?} 'get()(uint256)'
+    cast call --rpc-url http://localhost:8545 ${DCAP_VERIFIER_ADDRESS:?} 'get()(bytes memory)'
+    ```
+
+You will see the output like below, the submitted DCAP outputs returned:
+
+    ```bash
+    wwf@ubuntu-default:~/zk-dcap-verifier(dcap-guest)$ cast call --rpc-url http://localhost:8545 ${DCAP_VERIFIER_ADDRESS:?} 'get()(bytes memory)'
+    0x400000000000000048656c6c6f2c20776f726c6421000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000033d8736db756ed4997e04ba358d27833188f1932ff7b1d156904d3f560452fbb2000000000000000815f42f11cf64430c30bab7816ba596a1da0130c3b028b673133a66cf9a3e0e6000000002100000000000000436f6e66696775726174696f6e416e64535748617264656e696e674e656564656402000000000000000e00000000000000494e54454c2d53412d30303238390e00000000000000494e54454c2d53412d3030363135
     ```
 
 ## Deploy your project on a testnet
 
 You can deploy your contracts on a testnet such as `Sepolia` and run an end-to-end test or demo as follows:
 
-1. Get access to Bonsai and an Ethereum node running on a given testnet, e.g., Sepolia (in this example, we will be using [Alchemy](https://www.alchemy.com/) as our Ethereum node provider) and export the following environment variables:
-    > ***Note:*** *This requires having access to a Bonsai API Key. To request an API key [complete the form here](https://bonsai.xyz/apply).*
+1. Get access to Ethereum node running on a given testnet, e.g., Sepolia (in this example, we will be using [Alchemy](https://www.alchemy.com/) as our Ethereum node provider) and export the following environment variables:
 
     ```bash
-    export BONSAI_API_KEY="YOUR_API_KEY" # see form linked in the previous section
-    export BONSAI_API_URL="BONSAI_API_URL" # provided with your api key
     export ALCHEMY_API_KEY="YOUR_ALCHEMY_API_KEY" # the API_KEY provided with an alchemy account
     export ETH_WALLET_PRIVATE_KEY="YOUR_WALLET_PRIVATE_KEY" # the private hex-encoded key of your Sepolia testnet wallet
     ```
@@ -123,20 +130,20 @@ You can deploy your contracts on a testnet such as `Sepolia` and run an end-to-e
     ...
     == Logs ==
     Deployed RiscZeroGroth16Verifier to 0x5FbDB2315678afecb367f032d93F642f64180aa3
-    Deployed EvenNumber to 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
+    Deployed DcapVerifier to 0xe7f1725E7734CE288F8367e1Bb143E90bb3F0512
     ...
     ```
 
-    Save the `EvenNumber` contract address to an env variable:
+    Save the `DcapVerifier` contract address to an env variable:
 
     ```bash
-    export EVEN_NUMBER_ADDRESS=#COPY EVEN NUMBER ADDRESS FROM DEPLOY LOGS
+    export DCAP_VERIFIER_ADDRESS=#COPY DCAP VERIFIER ADDRESS FROM DEPLOY LOGS
     ```
 
     > You can also use the following command to set the contract address if you have [`jq`][jq] installed:
     >
     > ```bash
-    > export EVEN_NUMBER_ADDRESS=$(jq -re '.transactions[] | select(.contractName == "EvenNumber") | .contractAddress' ./broadcast/Deploy.s.sol/11155111/run-latest.json)
+    > export DCAP_VERIFIER_ADDRESS=$(jq -re '.transactions[] | select(.contractName == "DcapVerifier") | .contractAddress' ./broadcast/Deploy.s.sol/11155111/run-latest.json)
     > ```
 
 ### Interact with your testnet deployment
@@ -144,7 +151,7 @@ You can deploy your contracts on a testnet such as `Sepolia` and run an end-to-e
 1. Query the state:
 
     ```bash
-    cast call --rpc-url https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY:?} ${EVEN_NUMBER_ADDRESS:?} 'get()(uint256)'
+    cast call --rpc-url https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY:?} ${DCAP_VERIFIER_ADDRESS:?} 'get()(uint256)'
     ```
 
 2. Publish a new state
@@ -153,14 +160,14 @@ You can deploy your contracts on a testnet such as `Sepolia` and run an end-to-e
     cargo run --bin publisher -- \
         --chain-id=11155111 \
         --rpc-url=https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY:?} \
-        --contract=${EVEN_NUMBER_ADDRESS:?} \
+        --contract=${DCAP_VERIFIER_ADDRESS:?} \
         --input=12345678
     ```
 
 3. Query the state again to see the change:
 
     ```bash
-    cast call --rpc-url https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY:?} ${EVEN_NUMBER_ADDRESS:?} 'get()(uint256)'
+    cast call --rpc-url https://eth-sepolia.g.alchemy.com/v2/${ALCHEMY_API_KEY:?} ${DCAP_VERIFIER_ADDRESS:?} 'get()(uint256)'
     ```
 
 [Deploy to a testnet]: #deploy-your-project-on-a-testnet
