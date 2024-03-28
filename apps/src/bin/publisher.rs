@@ -16,13 +16,13 @@
 // to the Bonsai proving service and publish the received proofs directly
 // to your deployed app contract.
 
-use alloy_primitives::U256;
-use alloy_sol_types::{sol, SolInterface, SolValue};
-use anyhow::{Context, Result};
+use alloy_sol_types::{sol, SolInterface};
+use anyhow::Result;
 use apps::local_prover::LocalProver;
 use clap::Parser;
 use ethers::prelude::*;
-use methods::IS_EVEN_ELF;
+use methods::DCAP_VERIFIER_ELF;
+use primitive_io::Inputs;
 
 /// Wrapper of a `SignerMiddleware` client to send transactions to the given
 /// contract's `Address`.
@@ -67,8 +67,8 @@ impl TxSender {
 
 // `IEvenNumber` interface automatically generated via the alloy `sol!` macro.
 sol! {
-    interface IEvenNumber {
-        function set(uint256 x, bytes32 post_state_digest, bytes calldata seal);
+    interface IDCAP {
+        function set(bytes calldata output, bytes32 post_state_digest, bytes calldata seal);
     }
 }
 
@@ -91,10 +91,6 @@ struct Args {
     /// Application's contract address on Ethereum
     #[clap(long)]
     contract: String,
-
-    /// The input to provide to the guest binary
-    #[clap(short, long)]
-    input: U256,
 }
 
 fn main() -> Result<()> {
@@ -109,22 +105,28 @@ fn main() -> Result<()> {
         &args.contract,
     )?;
 
-    // ABI encode the input for the guest binary, to match what the `is_even` guest
-    // code expects.
-    let input = args.input.abi_encode();
+    // Mock data
+    let now = 1699301000u64;
+    let quote = include_bytes!("../../../res/dcap_quote").to_vec();
+    let quote_collateral = include_bytes!("../../../res/dcap_quote_collateral").to_vec();
 
-    log::info!("Start to generate proof for intput: {:?}", &input);
+    let input = Inputs {
+        now,
+        quote,
+        quote_collateral,
+    };
+    log::info!("Start to generate proof for intputs");
 
     // Send an off-chain proof request to the Bonsai proving service.
-    let (journal, post_state_digest, seal) = LocalProver::prove(IS_EVEN_ELF, &input)?;
+    let (journal, post_state_digest, seal) = LocalProver::prove(DCAP_VERIFIER_ELF, &bincode::serialize(&input).unwrap())?;
 
-    // Decode the journal. Must match what was written in the guest with
-    // `env::commit_slice`.
-    let x = U256::abi_decode(&journal, true).context("decoding journal data")?;
+    // Save journal committed from guest
+    let output = journal;
+    log::info!("Serialized output will be saved on-chain: {:?}", &hex::encode(&output));
 
-    // Encode the function call for `IEvenNumber.set(x)`.
-    let calldata = IEvenNumber::IEvenNumberCalls::set(IEvenNumber::setCall {
-        x,
+    // Encode the function call for `IDCAP.set(x)`.
+    let calldata = IDCAP::IDCAPCalls::set(IDCAP::setCall {
+        output,
         post_state_digest,
         seal,
     })
