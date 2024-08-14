@@ -31,12 +31,12 @@ contract DcapVerifierTest is RiscZeroCheats, Test {
         dcapVerifier = new DcapVerifier(verifier);
     }
 
-    function test_Set() public {
+    function test_VerifyAttestation() public {
         bytes memory input = "hello";
         (bytes memory journal, bytes32 post_state_digest, bytes memory seal) =
             prove(Elf.DCAP_VERIFIER_PATH, input);
 
-        dcapVerifier.set(journal, post_state_digest, seal);
-        assertEq(dcapVerifier.get(), journal);
+        bytes memory output = dcapVerifier.verifyAttestation(journal, post_state_digest, seal);
+        assertEq(output, journal);
     }
 }

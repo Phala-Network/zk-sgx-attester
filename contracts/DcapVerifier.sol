@@ -18,35 +18,33 @@ pragma solidity ^0.8.20;
 
 import {IRiscZeroVerifier} from "risc0/IRiscZeroVerifier.sol";
 import {ImageID} from "./ImageID.sol"; // auto-generated contract after running `cargo build`.
+import {Ownable} from "openzeppelin-contracts/contracts/access/Ownable.sol";
 
-contract DcapVerifier {
+contract DcapVerifier is Ownable {
     /// @notice RISC Zero verifier contract address.
-    IRiscZeroVerifier public immutable verifier;
+    IRiscZeroVerifier public verifier;
     /// @notice Image ID of the only zkVM binary to accept verification from.
-    bytes32 public constant imageId = ImageID.DCAP_VERIFIER_ID;
-
-    /// @notice Public outputs of the DCAP, that is guaranteed, by the RISC Zero zkVM, to be valid.
-    ///         It can be set by calling the `set` function.
-    /// workerId => DCAPOutputs
-    mapping (bytes32 => bytes) public outputs;
+    bytes32 public imageId = ImageID.DCAP_VERIFIER_ID;
 
     /// @notice Initialize the contract, binding it to a specified RISC Zero verifier.
-    constructor(IRiscZeroVerifier _verifier) {
+    constructor(IRiscZeroVerifier _verifier) Ownable(msg.sender) {
         verifier = _verifier;
     }
 
-    /// @notice Set the outputs of DCAP. Requires a RISC Zero proof that the DCAP is valid.
-    function set(bytes calldata x, bytes32 postStateDigest, bytes calldata seal) public {
+    /// @notice Update RISC Zero verifier and corresponding imageId.
+    function setVerifier(address _verifier, bytes32 _imageId) external onlyOwner {
+        verifier = IRiscZeroVerifier(_verifier);
+        imageId = _imageId;
+    }
+
+    /// @notice Check the proof of attestation verification and return the attestation output.
+    function verifyAttestation(bytes calldata x, bytes32 postStateDigest, bytes calldata seal)
+        external
+        returns(bytes memory) {
         // Construct the expected journal data. Verify will fail if journal does not match.
         bytes memory journal = x;
         require(verifier.verify(seal, imageId, postStateDigest, sha256(journal)));
-        // Hardcode for debug
-        outputs[bytes32(0)] = journal;
-    }
 
-    /// @notice Returns the number stored.
-    function get() public view returns (bytes memory) {
-        // Hardcode for debug
-        return outputs[bytes32(0)];
+        return journal;
     }
 }

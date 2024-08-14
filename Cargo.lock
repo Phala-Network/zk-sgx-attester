@@ -2447,7 +2447,9 @@ version = "0.1.0"
 dependencies = [
  "alloy-primitives",
  "alloy-sol-types",
+ "bincode",
  "hex",
+ "primitive-io",
  "risc0-build",
  "risc0-build-ethereum",
  "risc0-zkp 0.21.0",

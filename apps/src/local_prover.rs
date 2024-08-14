@@ -19,8 +19,8 @@ use alloy_primitives::FixedBytes;
 use anyhow::Result;
 use risc0_groth16::docker::stark_to_snark;
 use risc0_zkvm::{
-    get_prover_server, recursion::identity_p254, sha::Digestible, ExecutorEnv,
-    ExecutorImpl, ProverOpts, VerifierContext,
+    get_prover_server, recursion::identity_p254, sha::Digestible, ExecutorEnv, ExecutorImpl,
+    ProverOpts, VerifierContext,
 };
 
 /// An implementation of a Prover that runs on local machine.
@@ -73,7 +73,7 @@ impl LocalProver {
 mod tests {
     use alloy_primitives::U256;
     use alloy_sol_types::SolValue;
-    use methods::IS_EVEN_ELF;
+    use methods::DCAP_VERIFIER_ELF;
 
     // RISC0_DEV_MODE=false RUST_LOG=info cargo test --package apps --lib -- local_prover::tests --nocapture
     #[test]
@@ -81,7 +81,7 @@ mod tests {
         let even_number = U256::from(1304);
 
         let (journal, _post_state_digest, seal) =
-            super::LocalProver::prove(IS_EVEN_ELF, &even_number.abi_encode()).unwrap();
+            super::LocalProver::prove(DCAP_VERIFIER_ELF, &even_number.abi_encode()).unwrap();
 
         println!("Snark proof: {:?}", hex::encode(&seal));
         let x = U256::abi_decode(&journal, true).unwrap();

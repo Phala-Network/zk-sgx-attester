@@ -52,36 +52,17 @@ You can deploy the zk verifier contracts and run an end-to-end test or demo as f
 
 ### Interact with local deployment
 
-1. Query the state:
+Submit a new proof (this will verify the hardcoded DCAP input and submit the proof and **serialized** output to DcapVerifier contract)
 
     ```bash
-    cast call --rpc-url http://localhost:8545 ${DCAP_VERIFIER_ADDRESS:?} 'get()(bytes memory)'
-    ```
-
-You will see the outputs like below, because no dcap data been submitted:
-
-    ```bash
-    0x0
-    ```
-
-2. Publish a new state (this will verify the hardcoded DCAP input and submit the proof and **serialized** output to DcapVerifier contract)
-
-    ```bash
-    RISC0_DEV_MODE=false cargo run --bin publisher -- \
+    RUST_LOG=info RISC0_DEV_MODE=false cargo run --bin publisher -- \
         --chain-id=31337 \
         --rpc-url=http://localhost:8545 \
         --contract=${DCAP_VERIFIER_ADDRESS:?}
     ```
 
-3. Query the state again to see the change:
+You will see the output like below, the verification of attestation proof passed, and the submitted DCAP outputs returned:
 
     ```bash
-    cast call --rpc-url http://localhost:8545 ${DCAP_VERIFIER_ADDRESS:?} 'get()(bytes memory)'
-    ```
-
-You will see the output like below, the submitted DCAP outputs returned:
-
-    ```bash
-    wwf@ubuntu-default:~/zk-dcap-verifier(dcap-guest)$ cast call --rpc-url http://localhost:8545 ${DCAP_VERIFIER_ADDRESS:?} 'get()(bytes memory)'
     0x400000000000000048656c6c6f2c20776f726c6421000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000000200000000000000033d8736db756ed4997e04ba358d27833188f1932ff7b1d156904d3f560452fbb2000000000000000815f42f11cf64430c30bab7816ba596a1da0130c3b028b673133a66cf9a3e0e6000000002100000000000000436f6e66696775726174696f6e416e64535748617264656e696e674e656564656402000000000000000e00000000000000494e54454c2d53412d30303238390e00000000000000494e54454c2d53412d3030363135
     ```

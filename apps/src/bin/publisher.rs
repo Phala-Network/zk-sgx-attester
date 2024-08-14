@@ -68,7 +68,7 @@ impl TxSender {
 // `IEvenNumber` interface automatically generated via the alloy `sol!` macro.
 sol! {
     interface IDCAP {
-        function set(bytes calldata output, bytes32 post_state_digest, bytes calldata seal);
+        function verifyAttestation(bytes calldata output, bytes32 post_state_digest, bytes calldata seal);
     }
 }
 
@@ -118,15 +118,12 @@ fn main() -> Result<()> {
     log::info!("Start to generate proof for intputs");
 
     // Send an off-chain proof request to the Bonsai proving service.
-    let (journal, post_state_digest, seal) = LocalProver::prove(DCAP_VERIFIER_ELF, &bincode::serialize(&input).unwrap())?;
+    let (journal, post_state_digest, seal) =
+        LocalProver::prove(DCAP_VERIFIER_ELF, &bincode::serialize(&input).unwrap())?;
 
-    // Save journal committed from guest
-    let output = journal;
-    log::info!("Serialized output will be saved on-chain: {:?}", &hex::encode(&output));
-
-    // Encode the function call for `IDCAP.set(x)`.
-    let calldata = IDCAP::IDCAPCalls::set(IDCAP::setCall {
-        output,
+    // Encode the function call for `IDCAP.verifyAttestation(x)`.
+    let calldata = IDCAP::IDCAPCalls::verifyAttestation(IDCAP::verifyAttestationCall {
+        output: journal,
         post_state_digest,
         seal,
     })
