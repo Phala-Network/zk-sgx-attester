@@ -1,8 +1,7 @@
 mod quote;
 mod tcb_info;
 mod constants;
-// TODO: need port ring
-// mod utils;
+mod utils;
 
 use alloc::borrow::ToOwned;
 use alloc::string::{String, ToString};
@@ -13,8 +12,7 @@ use scale_info::TypeInfo;
 use crate::dcap::quote::{AuthData, EnclaveReport, Quote};
 use crate::dcap::tcb_info::TcbInfo;
 use crate::dcap::constants::*;
-// TODO: need port ring
-// use crate::dcap::utils::*;
+use crate::dcap::utils::*;
 use crate::Error;
 
 #[derive(Encode, Decode, TypeInfo, Clone, PartialEq, Eq, Debug)]
@@ -50,7 +48,7 @@ pub fn verify(
         return Err(Error::TCBInfoExpired);
     }
 
-    let _now_in_milli = now * 1000;
+    let now_in_milli = now * 1000;
 
     // Verify enclave
 
@@ -60,27 +58,26 @@ pub fn verify(
 
     // Verify integrity
 
-    // TODO: need port ring
     // Check TCB info cert chain and signature
-    // let leaf_certs = extract_certs(quote_collateral.tcb_info_issuer_chain.as_bytes())?;
-    // if leaf_certs.len() < 2 {
-    //     return Err(Error::CertificateChainIsTooShort);
-    // }
-    // let leaf_cert: webpki::EndEntityCert = webpki::EndEntityCert::try_from(&leaf_certs[0])
-    //     .map_err(|_| Error::LeafCertificateParsingError)?;
-    // let intermediate_certs = &leaf_certs[1..];
-    // verify_certificate_chain(&leaf_cert, intermediate_certs, now_in_milli)?;
-    // let asn1_signature = encode_as_der(&quote_collateral.tcb_info_signature)?;
-    // if leaf_cert
-    //     .verify_signature(
-    //         webpki::ECDSA_P256_SHA256,
-    //         quote_collateral.tcb_info.as_bytes(),
-    //         &asn1_signature,
-    //     )
-    //     .is_err()
-    // {
-    //     return Err(Error::RsaSignatureIsInvalid);
-    // }
+    let leaf_certs = extract_certs(quote_collateral.tcb_info_issuer_chain.as_bytes())?;
+    if leaf_certs.len() < 2 {
+        return Err(Error::CertificateChainIsTooShort);
+    }
+    let leaf_cert: webpki::EndEntityCert = webpki::EndEntityCert::try_from(&leaf_certs[0])
+        .map_err(|_| Error::LeafCertificateParsingError)?;
+    let intermediate_certs = &leaf_certs[1..];
+    verify_certificate_chain(&leaf_cert, intermediate_certs, now_in_milli)?;
+    let asn1_signature = encode_as_der(&quote_collateral.tcb_info_signature)?;
+    if leaf_cert
+        .verify_signature(
+            webpki::ring::ECDSA_P256_SHA256,
+            quote_collateral.tcb_info.as_bytes(),
+            &asn1_signature,
+        )
+        .is_err()
+    {
+        return Err(Error::RsaSignatureIsInvalid);
+    }
 
     // Check quote fields
     if quote.header.version != QUOTE_VERSION_V3 {
@@ -102,27 +99,25 @@ pub fn verify(
         return Err(Error::UnsupportedDCAPPckCertFormat);
     }
 
-    // TODO: need port ring
-    // let certification_certs = extract_certs(&certification_data.body.data)?;
-    // if certification_certs.len() < 2 {
-    //     return Err(Error::CertificateChainIsTooShort);
-    // }
-    // // Check certification_data
-    // let leaf_cert: webpki::EndEntityCert =
-    //     webpki::EndEntityCert::try_from(&certification_certs[0])
-    //         .map_err(|_| Error::LeafCertificateParsingError)?;
-    // let intermediate_certs = &certification_certs[1..];
-    // verify_certificate_chain(&leaf_cert, intermediate_certs, now_in_milli)?;
+    let certification_certs = extract_certs(&certification_data.body.data)?;
+    if certification_certs.len() < 2 {
+        return Err(Error::CertificateChainIsTooShort);
+    }
+    // Check certification_data
+    let leaf_cert: webpki::EndEntityCert =
+        webpki::EndEntityCert::try_from(&certification_certs[0])
+            .map_err(|_| Error::LeafCertificateParsingError)?;
+    let intermediate_certs = &certification_certs[1..];
+    verify_certificate_chain(&leaf_cert, intermediate_certs, now_in_milli)?;
 
     // Check QE signature
-    // TODO: need port ring
-    // let asn1_signature = encode_as_der(&auth_data.qe_report_signature)?;
-    // if leaf_cert
-    //     .verify_signature(webpki::ECDSA_P256_SHA256, &auth_data.qe_report, &asn1_signature)
-    //     .is_err()
-    // {
-    //     return Err(Error::RsaSignatureIsInvalid);
-    // }
+    let asn1_signature = encode_as_der(&auth_data.qe_report_signature)?;
+    if leaf_cert
+        .verify_signature(webpki::ring::ECDSA_P256_SHA256, &auth_data.qe_report, &asn1_signature)
+        .is_err()
+    {
+        return Err(Error::RsaSignatureIsInvalid);
+    }
 
     // Extract QE report from quote
     let mut qe_report = auth_data.qe_report.as_slice();
@@ -133,41 +128,34 @@ pub fn verify(
     let mut qe_hash_data = [0u8; QE_HASH_DATA_BYTE_LEN];
     qe_hash_data[0..ATTESTATION_KEY_LEN].copy_from_slice(&auth_data.ecdsa_attestation_key);
     qe_hash_data[ATTESTATION_KEY_LEN..].copy_from_slice(&auth_data.qe_auth_data.data);
-    // TODO: need port ring
-    // let qe_hash = ring::digest::digest(&ring::digest::SHA256, &qe_hash_data);
-    // if qe_hash.as_ref() != &qe_report.report_data[0..32] {
-    //     return Err(Error::QEReportHashMismatch);
-    // }
+    let qe_hash = ring::digest::digest(&ring::digest::SHA256, &qe_hash_data);
+    if qe_hash.as_ref() != &qe_report.report_data[0..32] {
+        return Err(Error::QEReportHashMismatch);
+    }
 
     // Check signature from auth data
-    // TODO: need port ring
-    // let mut pub_key = [0x04u8; 65]; //Prepend 0x04 to specify uncompressed format
-    // pub_key[1..].copy_from_slice(&auth_data.ecdsa_attestation_key);
-    // let peer_public_key =
-    //     ring::signature::UnparsedPublicKey::new(&ring::signature::ECDSA_P256_SHA256_FIXED, pub_key);
-    // peer_public_key
-    //     .verify(
-    //         &raw_quote[..(HEADER_BYTE_LEN + ENCLAVE_REPORT_BYTE_LEN)],
-    //         &auth_data.ecdsa_signature,
-    //     )
-    //     .map_err(|_| Error::IsvEnclaveReportSignatureIsInvalid)?;
+    let mut pub_key = [0x04u8; 65]; //Prepend 0x04 to specify uncompressed format
+    pub_key[1..].copy_from_slice(&auth_data.ecdsa_attestation_key);
+    let peer_public_key =
+        ring::signature::UnparsedPublicKey::new(&ring::signature::ECDSA_P256_SHA256_FIXED, pub_key);
+    peer_public_key
+        .verify(
+            &raw_quote[..(HEADER_BYTE_LEN + ENCLAVE_REPORT_BYTE_LEN)],
+            &auth_data.ecdsa_signature,
+        )
+        .map_err(|_| Error::IsvEnclaveReportSignatureIsInvalid)?;
 
     // Extract information from the quote
 
-    // TODO: need port ring
-    // let extension_section = get_intel_extension(&certification_certs[0])?;
-    // let cpu_svn = get_cpu_svn(&extension_section)?;
-    // let pce_svn = get_pce_svn(&extension_section)?;
-    // let fmspc = get_fmspc(&extension_section)?;
+    let extension_section = get_intel_extension(&certification_certs[0])?;
+    let cpu_svn = get_cpu_svn(&extension_section)?;
+    let pce_svn = get_pce_svn(&extension_section)?;
+    let fmspc = get_fmspc(&extension_section)?;
 
-    let cpu_svn = qe_report.cpu_svn;
-    let pce_svn = quote.header.pce_svn;
-
-    // TODO: need port ring
-    // let tcb_fmspc = hex::decode(&tcb_info.fmspc).map_err(|_| Error::CodecError)?;
-    // if fmspc != tcb_fmspc[..] {
-    //     return Err(Error::FmspcMismatch);
-    // }
+    let tcb_fmspc = hex::decode(&tcb_info.fmspc).map_err(|_| Error::CodecError)?;
+    if fmspc != tcb_fmspc[..] {
+        return Err(Error::FmspcMismatch);
+    }
 
     // TCB status and advisory ids
     let mut tcb_status = "Unknown".to_owned();

@@ -31,12 +31,21 @@ chrono = { version = "0.4.31", default-features = false, features = ["alloc", "s
 anyhow = { version = "1.0.79", default-features = false }
 thiserror = "1.0.50"
 
-#ring = { version = "0.17.5", default-features = false, features = ["alloc"] }
-#webpki = { version = "0.102.0-alpha.6", package = "rustls-webpki", default-features = false, features = ["alloc", "ring"] }
-#const-oid = { version = "0.9.5", default-features = false }
-#der = { version = "0.7.8", default-features = false }
-#pem = { version = "3", default-features = false }
-#x509-cert = { version = "0.2.4", default-features = false }
+asn1_der = { version = "0.7", default-features = false, features = [
+    "native_types",
+    "std",
+] }
+ring = { version = "0.17.5", default-features = false, features = ["std"] }
+const-oid = { version = "0.9.5", default-features = false, features = ["std"] }
+der = { version = "0.7.8", default-features = false, features = ["std"] }
+pem = { version = "3", default-features = false, features = ["std"] }
+x509-cert = { version = "0.2.4", default-features = false }
+# Release version no-std has bug
+webpki = { package = "rustls-webpki", version = "=0.102.6", default-features = false, features = ["alloc", "ring", "std"] }
 
 [profile.release]
 lto = "thin"
+
+
+[patch.crates-io]
+ring = { git = "https://github.com/tolak/ring.git", package = "ring", branch = "riscv64-support-0.17.8-compat" }
