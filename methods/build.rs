@@ -22,6 +22,11 @@ const SOLIDITY_IMAGE_ID_PATH: &str = "../contracts/ImageID.sol";
 const SOLIDITY_ELF_PATH: &str = "../tests/Elf.sol";
 
 fn main() {
+    // If TARGET_CC hasn't been set, set to clang as default
+    if env::var("TARGET_CC").is_err() {
+        env::set_var("TARGET_CC", "clang");
+    }
+
     // Builds can be made deterministic, and thereby reproducible, by using Docker to build the
     // guest. Check the RISC0_USE_DOCKER variable and use Docker to build the guest if set.
     let use_docker = env::var("RISC0_USE_DOCKER").ok().map(|_| DockerOptions {
