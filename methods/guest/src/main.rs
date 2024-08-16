@@ -31,7 +31,7 @@ fn main() {
     // Deserialize input bytes
     let input: Inputs = bincode::deserialize(&input_bytes).unwrap();
 
-    println!("Guest: check if dcap input is valid");
+    log::info!("Check if dcap input is valid");
     let now = input.now;
     let raw_quote = input.quote;
     let raw_quote_collateral = input.quote_collateral;
@@ -51,7 +51,7 @@ fn main() {
         advisory_ids
     };
 
-    println!("Guest: check passed, commit output to host");
+    log::info!("Check passed, commit output to host");
 
     // write public output to the journal
     env::commit_slice(bincode::serialize(&output).unwrap().as_slice());

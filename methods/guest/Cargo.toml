@@ -30,6 +30,7 @@ chrono = { version = "0.4.31", default-features = false, features = ["alloc", "s
 
 anyhow = { version = "1.0.79", default-features = false }
 thiserror = "1.0.50"
+log = { version = "0.4" }
 
 asn1_der = { version = "0.7", default-features = false, features = [
     "native_types",

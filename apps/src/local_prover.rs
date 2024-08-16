@@ -29,18 +29,18 @@ impl LocalProver {
     /// Generates a snark proof as a triplet (`Vec<u8>`, `FixedBytes<32>`,
     /// `Vec<u8>) for the given elf and input.
     pub fn prove(elf: &[u8], input: &[u8]) -> Result<(Vec<u8>, FixedBytes<32>, Vec<u8>)> {
-        println!("start local proving");
+        log::info!("Start local proving");
         let env = ExecutorEnv::builder()
             .write_slice(input)
             // .unwrap()
             .build()
             .unwrap();
 
-        println!("execute");
+        log::info!("Create execution session");
         let mut exec = ExecutorImpl::from_elf(env, elf).unwrap();
         let session = exec.run().unwrap();
 
-        println!("prove");
+        log::info!("Generate STARK proof");
         let opts = ProverOpts::default();
         let ctx = VerifierContext::default();
         let prover = get_prover_server(&opts).unwrap();
@@ -51,13 +51,12 @@ impl LocalProver {
         let succinct_receipt = prover.compress(composite_receipt).unwrap();
         let journal: Vec<u8> = session.journal.unwrap().bytes;
 
-        println!("identity_p254");
         let ident_receipt = identity_p254(&succinct_receipt).unwrap();
         let seal_bytes = ident_receipt.get_seal_bytes();
 
-        println!("Start translate STARK to SNARK");
+        log::info!("Start translate STARK to SNARK");
         let seal = stark_to_snark(&seal_bytes).unwrap().to_vec();
-        println!(
+        log::info!(
             "Transform finish, proof size decrease from {:} bytes to {:} bytes, snark proof {:?}",
             seal_bytes.len(),
             seal.len(),
@@ -83,7 +82,7 @@ mod tests {
         let (journal, _post_state_digest, seal) =
             super::LocalProver::prove(DCAP_VERIFIER_ELF, &even_number.abi_encode()).unwrap();
 
-        println!("Snark proof: {:?}", hex::encode(&seal));
+        log::info!("Snark proof: {:?}", hex::encode(&seal));
         let x = U256::abi_decode(&journal, true).unwrap();
         assert_eq!(x, even_number);
     }
