@@ -1264,7 +1264,7 @@ dependencies = [
 [[package]]
 name = "ring"
 version = "0.17.8"
-source = "git+https://github.com/tolak/ring.git?branch=riscv64-support-0.17.8-compat#e638863691bfb150a92adf056523733f6db8251b"
+source = "git+https://github.com/tolak/ring.git?branch=patch-for-risc0#26edaaf34c4f3f83562d3bb2d6dd3624a165d45e"
 dependencies = [
  "cc",
  "cfg-if",

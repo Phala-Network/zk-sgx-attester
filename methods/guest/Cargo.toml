@@ -49,4 +49,4 @@ lto = "thin"
 
 
 [patch.crates-io]
-ring = { git = "https://github.com/tolak/ring.git", package = "ring", branch = "riscv64-support-0.17.8-compat" }
+ring = { git = "https://github.com/tolak/ring.git", package = "ring", branch = "patch-for-risc0" }
