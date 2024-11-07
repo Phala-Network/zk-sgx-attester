@@ -25,6 +25,7 @@ impl<T: Decode + Into<u64>> Decode for Data<T> {
 }
 
 #[derive(Decode, Debug)]
+#[allow(dead_code)]
 pub struct Header {
     pub version: u16,
     pub attestation_key_type: u16,
@@ -36,12 +37,14 @@ pub struct Header {
 }
 
 #[derive(Decode, Debug)]
+#[allow(dead_code)]
 pub struct Body {
     pub body_type: u16,
     pub size: u32,
 }
 
 #[derive(Decode, Debug)]
+#[allow(dead_code)]
 pub struct EnclaveReport {
     pub cpu_svn: [u8; 16],
     pub misc_select: u32,
@@ -74,6 +77,7 @@ impl core::fmt::Debug for CertificationData {
 }
 
 #[derive(Decode, Debug)]
+#[allow(dead_code)]
 pub struct QEReportCertificationData {
     pub qe_report: [u8; ENCLAVE_REPORT_BYTE_LEN],
     pub qe_report_signature: [u8; QE_REPORT_SIG_BYTE_LEN],
@@ -92,6 +96,7 @@ pub struct AuthDataV3 {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub struct AuthDataV4 {
     pub ecdsa_signature: [u8; ECDSA_SIGNATURE_BYTE_LEN],
     pub ecdsa_attestation_key: [u8; ECDSA_PUBKEY_BYTE_LEN],
@@ -116,6 +121,7 @@ impl Decode for AuthDataV4 {
 }
 
 #[derive(Debug)]
+#[allow(dead_code)]
 pub enum AuthData {
     V3(AuthDataV3),
     V4(AuthDataV4),

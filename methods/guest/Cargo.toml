@@ -1,18 +1,16 @@
 [package]
 name = "guests"
-version = "0.1.0"
-edition = "2021"
+version = { workspace = true }
+edition = { workspace = true }
 
 [[bin]]
 name = "dcap-verifier"
 path = "src/main.rs"
 
-[workspace]
-
 [dependencies]
-alloy-primitives = { version = "0.6", default-features = false, features = ["rlp", "serde", "std"] }
-alloy-sol-types = { version = "0.6" }
-risc0-zkvm = { version = "0.20.1", default-features = false, features = ['std'] }
+alloy-primitives = { workspace = true }
+alloy-sol-types = { workspace = true }
+risc0-zkvm = { workspace = true, features = ["client"] }
 
 primitive-io = { path = "../../primitive-io" }
 
@@ -36,7 +34,7 @@ asn1_der = { version = "0.7", default-features = false, features = [
     "native_types",
     "std",
 ] }
-ring = { version = "0.17.5", default-features = false, features = ["std"] }
+ring = { version = "0.17.8", default-features = false, features = ["std"] }
 const-oid = { version = "0.9.5", default-features = false, features = ["std"] }
 der = { version = "0.7.8", default-features = false, features = ["std"] }
 pem = { version = "3", default-features = false, features = ["std"] }
@@ -46,7 +44,3 @@ webpki = { package = "rustls-webpki", version = "=0.102.6", default-features = f
 
 [profile.release]
 lto = "thin"
-
-
-[patch.crates-io]
-ring = { git = "https://github.com/tolak/ring.git", package = "ring", branch = "patch-for-risc0" }

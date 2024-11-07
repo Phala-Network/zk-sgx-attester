@@ -16,7 +16,7 @@
 
 pragma solidity ^0.8.20;
 
-import {RiscZeroCheats} from "risc0/RiscZeroCheats.sol";
+import {RiscZeroCheats} from "risc0/test/RiscZeroCheats.sol";
 import {console2} from "forge-std/console2.sol";
 import {Test} from "forge-std/Test.sol";
 import {IRiscZeroVerifier} from "risc0/IRiscZeroVerifier.sol";
@@ -33,10 +33,10 @@ contract DcapVerifierTest is RiscZeroCheats, Test {
 
     function test_VerifyAttestation() public {
         bytes memory input = "hello";
-        (bytes memory journal, bytes32 post_state_digest, bytes memory seal) =
+        (bytes memory journal, bytes memory seal) =
             prove(Elf.DCAP_VERIFIER_PATH, input);
 
-        bytes memory output = dcapVerifier.verifyAttestation(journal, post_state_digest, seal);
+        bytes memory output = dcapVerifier.verifyAttestation(journal, seal);
         assertEq(output, journal);
     }
 }

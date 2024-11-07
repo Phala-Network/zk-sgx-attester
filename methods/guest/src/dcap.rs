@@ -1,6 +1,6 @@
+mod constants;
 mod quote;
 mod tcb_info;
-mod constants;
 mod utils;
 
 use alloc::borrow::ToOwned;
@@ -9,9 +9,9 @@ use alloc::vec::Vec;
 use scale_codec::{Decode, Encode};
 use scale_info::TypeInfo;
 
+use crate::dcap::constants::*;
 use crate::dcap::quote::{AuthData, EnclaveReport, Quote};
 use crate::dcap::tcb_info::TcbInfo;
-use crate::dcap::constants::*;
 use crate::dcap::utils::*;
 use crate::Error;
 
@@ -42,8 +42,8 @@ pub fn verify(
     let tcb_info = pink_json::from_str::<TcbInfo>(&quote_collateral.tcb_info)
         .map_err(|_| Error::CodecError)?;
 
-    let next_update =
-        chrono::DateTime::parse_from_rfc3339(&tcb_info.next_update).map_err(|_| Error::CodecError)?;
+    let next_update = chrono::DateTime::parse_from_rfc3339(&tcb_info.next_update)
+        .map_err(|_| Error::CodecError)?;
     if now > next_update.timestamp() as u64 {
         return Err(Error::TCBInfoExpired);
     }
@@ -104,16 +104,19 @@ pub fn verify(
         return Err(Error::CertificateChainIsTooShort);
     }
     // Check certification_data
-    let leaf_cert: webpki::EndEntityCert =
-        webpki::EndEntityCert::try_from(&certification_certs[0])
-            .map_err(|_| Error::LeafCertificateParsingError)?;
+    let leaf_cert: webpki::EndEntityCert = webpki::EndEntityCert::try_from(&certification_certs[0])
+        .map_err(|_| Error::LeafCertificateParsingError)?;
     let intermediate_certs = &certification_certs[1..];
     verify_certificate_chain(&leaf_cert, intermediate_certs, now_in_milli)?;
 
     // Check QE signature
     let asn1_signature = encode_as_der(&auth_data.qe_report_signature)?;
     if leaf_cert
-        .verify_signature(webpki::ring::ECDSA_P256_SHA256, &auth_data.qe_report, &asn1_signature)
+        .verify_signature(
+            webpki::ring::ECDSA_P256_SHA256,
+            &auth_data.qe_report,
+            &asn1_signature,
+        )
         .is_err()
     {
         return Err(Error::RsaSignatureIsInvalid);
@@ -121,8 +124,7 @@ pub fn verify(
 
     // Extract QE report from quote
     let mut qe_report = auth_data.qe_report.as_slice();
-    let qe_report =
-        EnclaveReport::decode(&mut qe_report).map_err(|_err| Error::CodecError)?;
+    let qe_report = EnclaveReport::decode(&mut qe_report).map_err(|_err| Error::CodecError)?;
 
     // Check QE hash
     let mut qe_hash_data = [0u8; QE_HASH_DATA_BYTE_LEN];
@@ -162,8 +164,12 @@ pub fn verify(
     let mut advisory_ids = Vec::<String>::new();
     for tcb_level in &tcb_info.tcb_levels {
         if pce_svn >= tcb_level.tcb.pce_svn {
-            if cpu_svn.iter().zip(&tcb_level.tcb.components).any(|(a, b)| a < &b.svn) {
-                continue
+            if cpu_svn
+                .iter()
+                .zip(&tcb_level.tcb.components)
+                .any(|(a, b)| a < &b.svn)
+            {
+                continue;
             }
 
             tcb_status = tcb_level.tcb_status.clone();

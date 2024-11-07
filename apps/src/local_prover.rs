@@ -15,56 +15,35 @@
 // The following library provides utility functions to help generate SNARK proof
 // of the execution of guest code, here by mean verify DCAP of Phala workers.
 
-use alloy_primitives::FixedBytes;
 use anyhow::Result;
-use risc0_groth16::docker::stark_to_snark;
-use risc0_zkvm::{
-    get_prover_server, recursion::identity_p254, sha::Digestible, ExecutorEnv, ExecutorImpl,
-    ProverOpts, VerifierContext,
-};
+use risc0_ethereum_contracts::encode_seal;
+use risc0_zkvm::{default_prover, ExecutorEnv, ProverOpts, VerifierContext};
 
 /// An implementation of a Prover that runs on local machine.
 pub struct LocalProver {}
 impl LocalProver {
     /// Generates a snark proof as a triplet (`Vec<u8>`, `FixedBytes<32>`,
     /// `Vec<u8>) for the given elf and input.
-    pub fn prove(elf: &[u8], input: &[u8]) -> Result<(Vec<u8>, FixedBytes<32>, Vec<u8>)> {
+    pub fn prove(elf: &[u8], input: &[u8]) -> Result<(Vec<u8>, Vec<u8>)> {
+        let env = ExecutorEnv::builder().write_slice(input).build().unwrap();
+
         log::info!("Start local proving");
-        let env = ExecutorEnv::builder()
-            .write_slice(input)
-            // .unwrap()
-            .build()
-            .unwrap();
-
-        log::info!("Create execution session");
-        let mut exec = ExecutorImpl::from_elf(env, elf).unwrap();
-        let session = exec.run().unwrap();
-
-        log::info!("Generate STARK proof");
-        let opts = ProverOpts::default();
-        let ctx = VerifierContext::default();
-        let prover = get_prover_server(&opts).unwrap();
-        let receipt = prover.prove_session(&ctx, &session).unwrap();
-
-        let claim = receipt.get_claim().unwrap();
-        let composite_receipt = receipt.inner.composite().unwrap();
-        let succinct_receipt = prover.compress(composite_receipt).unwrap();
-        let journal: Vec<u8> = session.journal.unwrap().bytes;
-
-        let ident_receipt = identity_p254(&succinct_receipt).unwrap();
-        let seal_bytes = ident_receipt.get_seal_bytes();
-
-        log::info!("Start translate STARK to SNARK");
-        let seal = stark_to_snark(&seal_bytes).unwrap().to_vec();
+        let prover_info = default_prover().prove_with_ctx(
+            env,
+            &VerifierContext::default(),
+            elf,
+            &ProverOpts::groth16(),
+        )?;
         log::info!(
-            "Transform finish, proof size decrease from {:} bytes to {:} bytes, snark proof {:?}",
-            seal_bytes.len(),
-            seal.len(),
-            hex::encode(&seal)
+            "Proving finished, receipt: {:?}, stats: {:?}",
+            &prover_info.receipt,
+            &prover_info.stats
         );
-        let post_state_digest: [u8; 32] = claim.post.digest().into();
 
-        Ok((journal, post_state_digest.into(), seal))
+        let seal = encode_seal(&prover_info.receipt)?;
+        let journal = prover_info.receipt.journal.bytes.clone();
+
+        Ok((journal, seal))
     }
 }
 

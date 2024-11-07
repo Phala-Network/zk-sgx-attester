@@ -38,12 +38,12 @@ contract DcapVerifier is Ownable {
     }
 
     /// @notice Check the proof of attestation verification and return the attestation output.
-    function verifyAttestation(bytes calldata x, bytes32 postStateDigest, bytes calldata seal)
+    function verifyAttestation(bytes calldata x, bytes calldata seal)
         external
         returns(bytes memory) {
         // Construct the expected journal data. Verify will fail if journal does not match.
         bytes memory journal = x;
-        require(verifier.verify(seal, imageId, postStateDigest, sha256(journal)));
+        verifier.verify(seal, imageId, sha256(journal));
 
         return journal;
     }

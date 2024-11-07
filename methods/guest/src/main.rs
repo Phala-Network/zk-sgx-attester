@@ -14,10 +14,10 @@
 extern crate alloc;
 extern crate core;
 
-use std::io::Read;
-use risc0_zkvm::guest::env;
 use primitive_io::{Inputs, Outputs};
+use risc0_zkvm::guest::env;
 use scale_codec::Decode;
+use std::io::Read;
 
 mod error;
 use error::Error;
@@ -48,7 +48,7 @@ fn main() {
         isv_prod_id,
         isv_svn,
         tcb_status,
-        advisory_ids
+        advisory_ids,
     };
 
     log::info!("Check passed, commit output to host");

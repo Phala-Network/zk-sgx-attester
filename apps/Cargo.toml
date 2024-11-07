@@ -12,13 +12,15 @@ bonsai-sdk = { workspace = true }
 bytemuck = { workspace = true }
 clap = { version = "4.0", features = ["derive", "env"] }
 env_logger = { version = "0.10" }
-ethers = { workspace = true }
+ethers = "^2.0.14"
 hex = { workspace = true }
 log = { workspace = true }
 methods = { workspace = true }
 risc0-ethereum-contracts = { workspace = true }
-risc0-zkvm = { workspace = true, features = ["prove"] }
-risc0-groth16 = { workspace = true, features = ["prove"] }
+risc0-zkvm = { workspace = true }
+risc0-groth16 = { workspace = true }
+risc0-circuit-recursion = { workspace = true }
+risc0-zkvm-platform = { workspace = true }
 serde = { workspace = true }
 serde_bytes = "0.11"
 tokio = { version = "1.35", features = ["full"] }
