@@ -16,13 +16,35 @@ You can deploy the zk verifier contracts and run an end-to-end test or demo as f
     export ETH_WALLET_PRIVATE_KEY=0xac0974bec39a17e36ba4a6b4d238ff944bacb478cbed5efcae784d7bf4f2ff80
     ```
 
-3. Build project:
+3. Next, you will use rzup to install cargo-risczero.
+
+To install rzup, run the following command and follow the instructions:
+
+```bash
+curl -L https://risczero.com/install | bash
+```
+
+Next we can install the RISC Zero toolchain by running rzup:
+
+```bash
+rzup
+```
+
+You can verify the installation was successful by running:
+
+```bash
+cargo risczero --version
+```
+
+Now you have all the tools you need to develop and deploy an application with RISC Zero.
+
+4. Build project:
 
     ```bash
     cargo build
     ```
 
-4. Deploy verifiers contract by running:
+5. Deploy verifiers contract by running:
 
     ```bash
     forge script --rpc-url http://localhost:8545 --broadcast script/Deploy.s.sol
